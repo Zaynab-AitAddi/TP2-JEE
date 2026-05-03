@@ -1,0 +1,66 @@
+# ===========================================
+# TP2 - J2EE Application
+# Student: Zaynab AITADDI
+# Deployment Script (Windows)
+# ===========================================
+
+Write-Host "===========================================" -ForegroundColor Cyan
+Write-Host "TP2 - J2EE Application" -ForegroundColor Yellow
+Write-Host "Student: Zaynab AITADDI" -ForegroundColor Magenta
+Write-Host "===========================================" -ForegroundColor Cyan
+
+# Configuration (CHANGE THESE IF NEEDED)
+$TOMCAT_HOME = "C:\Tomcat"
+$JAVA_HOME = "C:\Program Files\Java\jdk-11"
+
+# Set Java and Tomcat paths
+$env:JAVA_HOME = $JAVA_HOME
+$env:Path = "$env:JAVA_HOME\bin;$env:Path"
+$env:CATALINA_HOME = $TOMCAT_HOME
+
+Write-Host "`n📌 Step 1: Killing existing Tomcat processes..." -ForegroundColor Yellow
+Get-Process -Name java -ErrorAction SilentlyContinue | Stop-Process -Force
+Start-Sleep -Seconds 2
+
+Write-Host "📌 Step 2: Cleaning old deployment..." -ForegroundColor Yellow
+Remove-Item "$TOMCAT_HOME\webapps\TP2" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "$TOMCAT_HOME\webapps\TP2.war" -Force -ErrorAction SilentlyContinue
+Remove-Item "$TOMCAT_HOME\work\Catalina" -Recurse -Force -ErrorAction SilentlyContinue
+
+Write-Host "📌 Step 3: Creating directory structure..." -ForegroundColor Yellow
+New-Item -ItemType Directory -Force -Path "temp\WEB-INF\classes" | Out-Null
+
+Write-Host "📌 Step 4: Compiling Servlets..." -ForegroundColor Yellow
+javac -cp "$TOMCAT_HOME\lib\servlet-api.jar" -d temp\WEB-INF\classes src\servlets\*.java
+
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "❌ Compilation failed!" -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "📌 Step 5: Copying files..." -ForegroundColor Yellow
+Copy-Item WEB-INF\web.xml temp\WEB-INF\ -Force
+Copy-Item *.jsp temp\ -Force
+
+Write-Host "📌 Step 6: Creating WAR file..." -ForegroundColor Yellow
+Push-Location temp
+jar -cf TP2.war *
+Move-Item TP2.war "$TOMCAT_HOME\webapps\" -Force
+Pop-Location
+
+Write-Host "📌 Step 7: Cleaning temporary files..." -ForegroundColor Yellow
+Remove-Item temp -Recurse -Force
+
+Write-Host "📌 Step 8: Starting Tomcat..." -ForegroundColor Yellow
+Start-Process "$TOMCAT_HOME\bin\startup.bat"
+
+Start-Sleep -Seconds 5
+
+Write-Host "📌 Step 9: Opening browser..." -ForegroundColor Yellow
+Start-Process "http://localhost:8080/TP2/"
+
+Write-Host "`n===========================================" -ForegroundColor Green
+Write-Host "✅ DEPLOYMENT SUCCESSFUL!" -ForegroundColor Green
+Write-Host "📍 URL: http://localhost:8080/TP2/" -ForegroundColor Cyan
+Write-Host "👩‍🎓 Student: Zaynab AITADDI" -ForegroundColor Magenta
+Write-Host "===========================================" -ForegroundColor Green
